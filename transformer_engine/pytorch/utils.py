@@ -787,7 +787,7 @@ def check_gemm_dims(inp: torch.Tensor, weight: torch.Tensor, fp8: bool) -> None:
 def is_bf16_compatible() -> bool:
     if IS_HIP_EXTENSION:
         # only MI200 and newer machines support bf16
-        return get_device_compute_capability() in ((9, 4), (9, 5), (12, 5)) or is_mi200()
+        return get_device_compute_capability() in ((9, 4), (9, 5), (12, 0), (12, 5)) or is_mi200()
     """Replaces torch.cuda.is_bf16_compatible() with an explicit
     check on device compute capability to enforce sm_80 or higher.
     """

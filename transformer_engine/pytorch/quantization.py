@@ -158,10 +158,11 @@ def _compute_fp8_support() -> Tuple[bool, str]:
     """Return if fp8 support is available"""
     if IS_HIP_EXTENSION:
         gpu_arch = get_device_compute_capability()
-        if gpu_arch in ((9, 4), (9, 5), (12, 5)):
+        # gfx1200/gfx1201 (RDNA4) have OCP E4M3/E5M2 WMMA and hipBLASLt FP8 GEMMs.
+        if gpu_arch in ((9, 4), (9, 5), (12, 0), (12, 5)):
             return True, ""
         else:
-            return False, "Device arch gfx94x or newer is required for FP8 execution."
+            return False, "Device arch gfx94x, gfx95x, gfx120x or gfx1250 is required for FP8 execution."
     if get_device_compute_capability() >= (9, 0):  # hopper and above
         return True, ""
     if get_device_compute_capability() < (8, 9):  # pre-ada

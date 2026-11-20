@@ -8,6 +8,14 @@
 #include "common.h"
 #include "pybind.h"
 
+// ROCm: at::cuda::CUDAGuard is unavailable on older torch; masquerade the HIP guard.
+#include <torch/version.h>
+#if USE_ROCM && TORCH_VERSION_MINOR < 11
+using TECUDAGuard = at::hip::HIPGuardMasqueradingAsCUDA;
+#else
+using TECUDAGuard = at::cuda::CUDAGuard;
+#endif
+
 namespace transformer_engine::pytorch {
 
 at::Tensor fused_rope_forward(const at::Tensor &input, const at::Tensor &freqs,
@@ -306,7 +314,7 @@ std::tuple<py::object, py::object> fused_mla_kv_rope_mxfp8(
   const auto device = kv.device();
   TORCH_CHECK(k_rope.device() == device && cos.device() == device && sin.device() == device,
               "expected kv, k_rope, cos and sin on the same device");
-  at::cuda::CUDAGuard device_guard(device);
+  TECUDAGuard device_guard(device);
   TORCH_CHECK(kv.dim() == 4, "expected kv of shape [s, b, h, k_dim + v_dim], got ", kv.sizes());
   const int64_t s = kv.size(0);
   const int64_t b = kv.size(1);

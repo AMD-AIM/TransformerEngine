@@ -31,6 +31,14 @@
 #include "transformer_engine/recipe.h"
 #include "transformer_engine/transformer_engine.h"
 
+// ROCm: at::cuda::CUDAGuard is unavailable on older torch; masquerade the HIP guard.
+#include <torch/version.h>
+#if USE_ROCM && TORCH_VERSION_MINOR < 11
+using TECUDAGuard = at::hip::HIPGuardMasqueradingAsCUDA;
+#else
+using TECUDAGuard = at::cuda::CUDAGuard;
+#endif
+
 namespace transformer_engine {
 namespace pytorch {
 
@@ -511,7 +519,7 @@ py::object group_scaled_swiglu_impl(const char *api_name, const at::Tensor &inpu
 
   // Allocate the output and launch on the operands' device rather than on whatever
   // torch.cuda.set_device last selected.
-  at::cuda::CUDAGuard device_guard(input_2h.device());
+  TECUDAGuard device_guard(input_2h.device());
 
   const bool empty_input_buffer = (N == 0 || H == 0);
 

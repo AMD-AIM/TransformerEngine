@@ -9,6 +9,14 @@
 #include "../extensions.h"
 #include "common.h"
 
+// ROCm: at::cuda::CUDAGuard is unavailable on older torch; masquerade the HIP guard.
+#include <torch/version.h>
+#if USE_ROCM && TORCH_VERSION_MINOR < 11
+using TECUDAGuard = at::hip::HIPGuardMasqueradingAsCUDA;
+#else
+using TECUDAGuard = at::cuda::CUDAGuard;
+#endif
+
 namespace transformer_engine::pytorch {
 
 static std::map<std::string, int> score_function_map = {
@@ -165,7 +173,7 @@ fused_topk_with_score_function_qb_fwd(at::Tensor logits, int topk,
   TORCH_CHECK(logits.dim() >= 1, "logits must have at least 1 dim");
   TORCH_CHECK(logits.is_cuda() && logits.is_contiguous(),
               "logits must be a contiguous CUDA tensor");
-  at::cuda::CUDAGuard device_guard(logits.device());
+  TECUDAGuard device_guard(logits.device());
   const auto sizes = logits.sizes();
   const int64_t num_experts = sizes.back();
   const int64_t num_tokens =
